@@ -3,11 +3,13 @@ import { auth, db, storage } from '../firebase/config';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
+import {UserData} from '../types/UserData';
 
 interface User {
   name?: string;
   bio?: string;
   avatarURL?: string;
+  Data?: UserData;
   // will add other user fields as needed
 }
 
@@ -55,6 +57,8 @@ export const useUser = () => {
     setAvatarURL(url);
     return url;
   };
+
+
 
   return {
     user,

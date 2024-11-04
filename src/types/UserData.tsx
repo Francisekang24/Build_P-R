@@ -30,17 +30,35 @@ interface Project {
     link?: string;
 }
 
+interface Certification {
+    name: string;
+    date: string;
+    organization: string;
+}
+
+interface Skill {
+    name: string;
+    level: string;
+}
+
+interface Language {
+    name: string;
+    level: string;
+}
+
 interface UserData {
     firstName: string;
     lastName: string;
+    title: string;
+    position: string;
     contactInfo: ContactInfo;
     education: Education[];
     workExperience: WorkExperience[];
-    skills: string[];
-    languages: string[];
+    skills: Skill[];
+    languages: Language[];
     projects: Project[];
-    certifications?: string[];
+    certifications?: Certification[];
     summary?: string;
 }
 
-export default UserData;
+export type { UserData, ContactInfo, Education, WorkExperience, Project, Certification, Skill, Language };

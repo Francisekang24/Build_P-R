@@ -94,17 +94,8 @@ export default function Navbar() {
                         />
                     </DropdownTrigger>
                     <DropdownMenu>
-                        <DropdownItem
-                            isReadOnly
-                            key="profile"
-                            className="opacity-100">
-                            <Image
-                                width={160}
-                                height={160}
-                                radius="full"
-                                alt={user?.name || 'user name'}
-                                src={avatarURL || undefined}
-                            />
+                        <DropdownItem>
+                            <Link to="/profile">Information</Link>
                         </DropdownItem>
                         <DropdownItem>
                             <Link to="/profile">Profile</Link>
