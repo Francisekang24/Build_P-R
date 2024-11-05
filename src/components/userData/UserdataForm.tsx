@@ -6,6 +6,7 @@ import Skills from "./sections/Skills";
 import Language from "./sections/Language";
 import Certificate from "./sections/Ceritficate";
 import Project from "./sections/Project";
+import Summary from "./sections/Summary";
 
 
 export default function UserdataForm() {
@@ -16,7 +17,7 @@ export default function UserdataForm() {
                 <h4 className="text-center text-2xl font-medium">Information</h4>
             </div>
             <Divider className="my-4" />
-            <Tabs aria-label='Tabs' fullWidth size="lg">
+            <Tabs aria-label='Tabs' fullWidth size="md">
                     <Tab key="contact" title="contact">
                         <Contact />
                     </Tab>
@@ -37,6 +38,9 @@ export default function UserdataForm() {
                     </Tab>
                     <Tab key="projects" title="projects">
                         <Project />
+                    </Tab>
+                    <Tab key="summary" title="summary">
+                        <Summary />
                     </Tab>
             </Tabs>
             <div className="mt-6 text-center">
