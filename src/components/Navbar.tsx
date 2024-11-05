@@ -95,7 +95,7 @@ export default function Navbar() {
                     </DropdownTrigger>
                     <DropdownMenu>
                         <DropdownItem>
-                            <Link to="/profile">Information</Link>
+                            <Link to='/data'>Information</Link>
                         </DropdownItem>
                         <DropdownItem>
                             <Link to="/profile">Profile</Link>

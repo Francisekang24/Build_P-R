@@ -4,6 +4,7 @@ import { auth, db } from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { doc, setDoc } from 'firebase/firestore';
 
+
 export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,10 +24,12 @@ export default function SignUp() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+
       try {
         await setDoc(doc(db, 'users', user.uid), {
           email: user.email,
           createdAt: new Date(),
+          uid: user.uid
         });
       } catch (error) {
         setError('Failed to save user data');

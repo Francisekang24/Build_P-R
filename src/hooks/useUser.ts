@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import {UserData} from '../types/UserData';
 
 interface User {
+  uid: string;
   name?: string;
   bio?: string;
   avatarURL?: string;
@@ -45,7 +46,7 @@ export const useUser = () => {
 
     const userRef = doc(db, 'users', auth.currentUser.uid);
     await updateDoc(userRef, updates);
-    setUser((prevUser) => ({ ...prevUser, ...updates }));
+    setUser((prevUser) => prevUser ? { ...prevUser, ...updates } : prevUser);
   };
 
   const uploadAvatar = async () => {

@@ -7,12 +7,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Resume from './pages/Resume';
 import Portfolio from './pages/Porfolio';
 import UserdatatForm from './components/userData/UserdataForm';
-import { useUser } from './hooks/useUser';
+
 
 export default function App() {
 
-  const user = useUser();
-  const userName = user?.user?.name;
 
   return (
     <Router>
@@ -39,11 +37,11 @@ export default function App() {
             <ProtectedRoute>
               <UserProfile />
             </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`/user/${userName}`}
-            element={
+          }
+        />
+        <Route
+          path='/data'
+          element={
             <ProtectedRoute>
               <UserdatatForm />
             </ProtectedRoute>
