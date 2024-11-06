@@ -1,12 +1,72 @@
-import { Button, Card, CardBody, CardFooter, CardHeader, Divider, Input, Textarea } from "@nextui-org/react";
-import { useState } from "react";
-
-
+import { Button, Card, CardBody, CardFooter, CardHeader, Input, Textarea } from "@nextui-org/react";
+import { useState, useEffect, useRef } from "react";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db } from "../../../firebase/config";
+import { useUser } from "../../../hooks/useUser";
+import { Project as ProjectType } from "../../../types/UserData";
 
 export default function Project() {
-
     const [update, setUpdate] = useState(false);
+    const [projects, setProjects] = useState<ProjectType[]>([]);
+    const [technologies, setTechnologies] = useState<string[]>([]);
+    const { user } = useUser();
+    const projectNameRef = useRef<HTMLInputElement>(null);
+    const linkRef = useRef<HTMLInputElement>(null);
+    const descriptionRef = useRef<HTMLTextAreaElement>(null);
+    const technologyRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            if (!user?.uid) return;
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                setProjects(userDoc.data().projects || []);
+            }
+        };
+        fetchProjects();
+    }, [user]);
+
     const triggerUpdate = () => setUpdate(!update);
+
+    const handleAddTechnology = () => {
+        if (technologyRef.current?.value) {
+            setTechnologies([...technologies, technologyRef.current.value]);
+            technologyRef.current.value = "";
+        }
+    };
+
+    const handleAddProject = async () => {
+        if (!user?.uid) {
+            console.error("User ID is undefined");
+            return;
+        }
+        try {
+            const newProject: ProjectType = {
+                name: projectNameRef.current?.value || "",
+                link: linkRef.current?.value || "",
+                description: descriptionRef.current?.value || "",
+                technologies: technologies,
+            };
+
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            const existingProjects = userDoc.exists() ? userDoc.data().projects || [] : [];
+
+            await setDoc(userDocRef, {
+                projects: [...existingProjects, newProject]
+            }, { merge: true });
+
+            setProjects([...existingProjects, newProject]);
+            setTechnologies([]);
+            triggerUpdate();
+            if (projectNameRef.current) projectNameRef.current.value = "";
+            if (linkRef.current) linkRef.current.value = "";
+            if (descriptionRef.current) descriptionRef.current.value = "";
+        } catch (error) {
+            console.error("Error adding project: ", error);
+        }
+    };
 
     return (
         <div className="max-w-full">
@@ -18,129 +78,99 @@ export default function Project() {
                 </CardHeader>
                 <CardBody>
                     <div className={update ? "hidden" : "block"}>
-                        <div className="flex flex-col gap-2 p-1 w-full ">
-                            <div className="border-b pb-2">
-                                <div className="flex justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium">Project Name</p>
-                                        <p className="text-sm">Weather App</p>
+                        <div className="flex flex-col gap-2 p-1 w-full">
+                            {projects.map((project, index) => (
+                                <div key={index} className="border-b pb-2">
+                                    <div className="flex justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium">Project Name</p>
+                                            <p className="text-sm">{project.name}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium">Link</p>
+                                            <p className="text-sm"><a href={project.link} target="_blank" rel="noopener noreferrer">{project.link}</a></p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium">Technologies</p>
+                                            <ul className="text-sm">
+                                                {project.technologies.map((tech, i) => (
+                                                    <li key={i}>{tech}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium">Link</p>
-                                        <p className="text-sm"><a href="https://weatherapp.example.com" target="_blank" rel="noopener noreferrer">weatherapp.example.com</a></p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">Technologies</p>
-                                        <p className="text-sm">React, TypeScript, OpenWeather API</p>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium">Description</p>
-                                        <p className="text-sm">A web application that provides weather forecasts and current weather conditions for any location.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="border-b pb-2">
-                                <div className="flex justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium">Project Name</p>
-                                        <p className="text-sm">Task Manager</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">Link</p>
-                                        <p className="text-sm"><a href="https://taskmanager.example.com" target="_blank" rel="noopener noreferrer">taskmanager.example.com</a></p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">Technologies</p>
-                                        <p className="text-sm">Vue, Vuex, Firebase</p>
+                                    <div className="flex justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium">Description</p>
+                                            <p className="text-sm">{project.description}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium">Description</p>
-                                        <p className="text-sm">A productivity tool to manage tasks, set deadlines, and track progress.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="border-b pb-2">
-                                <div className="flex justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium">Project Name</p>
-                                        <p className="text-sm">E-commerce Platform</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">Link</p>
-                                        <p className="text-sm"><a href="https://ecommerce.example.com" target="_blank" rel="noopener noreferrer">ecommerce.example.com</a></p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">Technologies</p>
-                                        <p className="text-sm">Angular, Node.js, MongoDB</p>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium">Description</p>
-                                        <p className="text-sm">An online platform for buying and selling products with integrated payment gateway.</p>
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
                     <div className={update ? "block" : "hidden"}>
-                        <div className="flex gap-2 p-1 w-full">
-                            <Input
-                                label="Project Name"
-                                labelPlacement="outside"
-                                placeholder="Project Name"
-                                type="text"
-                            />
-                            <Input
-                                label="Link"
-                                labelPlacement="outside"
-                                placeholder="Link"
-                                type="text"
-                            />
-                        </div>
-                        <div className="flex gap-2 p-1 w-full">
-                            <Textarea
-                                label="Description"
-                                labelPlacement="outside"
-                                placeholder="Description"
-                                type="text"
-                            />
-                        </div>
-                        <div className="flex flex-col p-1 w-full">
-                            <Input
-                                label="Technologies"
-                                labelPlacement="outside"
-                                placeholder="Technologies"
-                                type="text"
-                            />
-                            <div className="flex justify-start items-center">
-                                <Button className="mt-4 mr-2">
+                        <form>
+                            <div className="flex gap-2 p-1 w-full">
+                                <Input
+                                    ref={projectNameRef}
+                                    label="Project Name"
+                                    labelPlacement="outside"
+                                    placeholder="Project Name"
+                                    type="text"
+                                />
+                                <Input
+                                    ref={linkRef}
+                                    label="Link"
+                                    labelPlacement="outside"
+                                    placeholder="Link"
+                                    type="text"
+                                />
+                            </div>
+                            <div className="flex gap-2 p-1 w-full">
+                                <Textarea
+                                    ref={descriptionRef}
+                                    label="Description"
+                                    labelPlacement="outside"
+                                    placeholder="Description"
+                                    type="text"
+                                />
+                            </div>
+                            <div className="flex flex-col p-1 w-full">
+                                <Input
+                                    ref={technologyRef}
+                                    label="Technologies"
+                                    labelPlacement="outside"
+                                    placeholder="Technology"
+                                    type="text"
+                                />
+                                <div className="flex justify-start items-center">
+                                    <Button onClick={handleAddTechnology}>
+                                        Add Technology
+                                    </Button>
+                                </div>
+                                <ul className="text-sm">
+                                    {technologies.map((tech, index) => (
+                                        <li key={index}>{tech}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="flex justify-end items-center">
+                                <Button className="mt-4 mr-2" onClick={handleAddProject}>
                                     Add
                                 </Button>
                             </div>
-                        </div>
-                        <div className="flex justify-end items-center">
-                            <Button className="mt-4 mr-2">
-                                Add
-                            </Button>
-                        </div>
+                        </form>
                     </div>
                 </CardBody>
                 <CardFooter>
-                    <div className="flex justify-end items-center">
-                        <Button
-                            onClick={triggerUpdate}
-                        >
-                            {update ? "Done" : "Update"}
-                        </Button>
-                    </div>
+                    <Button
+                        onClick={triggerUpdate}
+                    >
+                        {update ? "Done" : "Update"}
+                    </Button>
                 </CardFooter>
             </Card>
         </div>
-
     );
 };

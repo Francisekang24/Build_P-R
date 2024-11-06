@@ -1,10 +1,48 @@
-import { Button, Card, CardBody, CardFooter, CardHeader, Divider, Input, Textarea } from "@nextui-org/react";
-import { useState } from "react";
+import { Button, Card, CardBody, CardFooter, CardHeader, Textarea } from "@nextui-org/react";
+import { useState, useEffect, useRef } from "react";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db } from "../../../firebase/config";
+import { useUser } from "../../../hooks/useUser";
 
 export default function Summary() {
-
     const [update, setUpdate] = useState(false);
+    const [summary, setSummary] = useState("");
+    const { user } = useUser();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        const fetchSummary = async () => {
+            if (!user?.uid) return;
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                setSummary(userDoc.data().summary || "");
+            }
+        };
+        fetchSummary();
+    }, [user]);
+
     const triggerUpdate = () => setUpdate(!update);
+
+    const handleAddSummary = async () => {
+        if (!user?.uid) {
+            console.error("User ID is undefined");
+            return;
+        }
+        try {
+            const newSummary = textareaRef.current?.value || "";
+
+            const userDocRef = doc(db, 'users', user.uid);
+            await setDoc(userDocRef, { summary: newSummary }, { merge: true });
+            setSummary(newSummary);
+            triggerUpdate();
+            if (textareaRef.current) {
+                textareaRef.current.value = "";
+            }
+        } catch (error) {
+            console.error("Error adding summary: ", error);
+        }
+    };
 
     return (
         <div className="max-w-full">
@@ -20,7 +58,7 @@ export default function Summary() {
                             <div className="flex justify-between">
                                 <div>
                                     <p className="text-sm font-medium">Summary</p>
-                                    <p className="text-sm">Experienced software developer with a strong background in developing scalable web applications and working with cross-functional teams.</p>
+                                    <p className="text-sm">{summary}</p>
                                 </div>
                             </div>
                         </div>
@@ -28,6 +66,7 @@ export default function Summary() {
                     <div className={update ? "block" : "hidden"}>
                         <div className="flex gap-2 p-1 w-full">
                             <Textarea
+                                ref={textareaRef}
                                 label="Summary"
                                 labelPlacement="outside"
                                 placeholder="Summary"
@@ -35,8 +74,8 @@ export default function Summary() {
                             />
                         </div>
                         <div className="flex justify-end items-center">
-                            <Button className="mt-4 mr-2">
-                                Add
+                            <Button className="mt-4 mr-2" onClick={handleAddSummary}>
+                                Update
                             </Button>
                         </div>
                     </div>
