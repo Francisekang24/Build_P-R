@@ -1,6 +1,6 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Input } from "@nextui-org/react";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { db } from "../../../firebase/config";
 import { useUser } from "../../../hooks/useUser";
 import { Skill } from "../../../types/UserData";
@@ -8,9 +8,8 @@ import { Skill } from "../../../types/UserData";
 export default function Skills() {
     const [update, setUpdate] = useState(false);
     const [skills, setSkills] = useState<Skill[]>([]);
-    const { user } = useUser();
-    const skillRef = useRef<HTMLInputElement>(null);
-    const proficiencyRef = useRef<HTMLInputElement>(null);
+    const [newSkill, setNewSkill] = useState<Skill>({ name: "", level: "" });
+    const { user, UpdateSkills } = useUser();
 
     useEffect(() => {
         const fetchSkills = async () => {
@@ -18,13 +17,19 @@ export default function Skills() {
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
-                setSkills(userDoc.data().skills || []);
+                const fetchedSkills = userDoc.data().skills || [];
+                setSkills(fetchedSkills);
+                UpdateSkills(fetchedSkills); // Update skills in user context only after fetching
             }
         };
         fetchSkills();
-    }, [user]);
+    }, [user, UpdateSkills]);
 
     const triggerUpdate = () => setUpdate(!update);
+
+    const handleInputChange = (field: keyof Skill, value: string) => {
+        setNewSkill((prev) => ({ ...prev, [field]: value }));
+    };
 
     const handleAddSkill = async () => {
         if (!user?.uid) {
@@ -32,23 +37,18 @@ export default function Skills() {
             return;
         }
         try {
-            const skill: Skill = {
-                name: skillRef.current?.value || "",
-                level: proficiencyRef.current?.value || "",
-            };
-
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             const existingSkills = userDoc.exists() ? userDoc.data().skills || [] : [];
 
-            await setDoc(userDocRef, {
-                skills: [...existingSkills, skill]
-            }, { merge: true });
+            const updatedSkills = [...existingSkills, newSkill];
 
-            setSkills([...existingSkills, skill]);
+            await setDoc(userDocRef, { skills: updatedSkills }, { merge: true });
+
+            setSkills(updatedSkills);
+            UpdateSkills(updatedSkills); // Update context with the new skills array
+            setNewSkill({ name: "", level: "" }); // Clear new skill input fields
             triggerUpdate();
-            if (skillRef.current) skillRef.current.value = "";
-            if (proficiencyRef.current) proficiencyRef.current.value = "";
         } catch (error) {
             console.error("Error adding skill: ", error);
         }
@@ -80,21 +80,23 @@ export default function Skills() {
                         </div>
                     </div>
                     <div className={update ? "block" : "hidden"}>
-                        <form>
+                        <form onSubmit={(e) => { e.preventDefault(); handleAddSkill(); }}>
                             <div className="flex gap-2 p-1 w-full">
                                 <Input
-                                    ref={skillRef}
                                     label="Skill"
                                     labelPlacement="outside"
                                     placeholder="Skill"
                                     type="text"
+                                    value={newSkill.name}
+                                    onChange={(e) => handleInputChange("name", e.target.value)}
                                 />
                                 <Input
-                                    ref={proficiencyRef}
                                     label="Proficiency"
                                     labelPlacement="outside"
                                     placeholder="Proficiency"
                                     type="text"
+                                    value={newSkill.level}
+                                    onChange={(e) => handleInputChange("level", e.target.value)}
                                 />
                             </div>
                             <div className="flex justify-end items-center">
@@ -107,15 +109,13 @@ export default function Skills() {
                 </CardBody>
                 <CardFooter>
                     <div className="flex justify-end items-center">
-                        <Button
-                            onClick={triggerUpdate}
-                            className="mr-2"
-                        >
+                        <Button onClick={triggerUpdate} className="mr-2">
                             {update ? "Done" : "Update"}
                         </Button>
                     </div>
                 </CardFooter>
             </Card>
+            <pre>{JSON.stringify(user?.skills, null, 2)}</pre>
         </div>
     );
 };

@@ -1,6 +1,6 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Input } from "@nextui-org/react";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { db } from "../../../firebase/config";
 import { useUser } from "../../../hooks/useUser";
 import { Language as LanguageType } from "../../../types/UserData";
@@ -8,9 +8,8 @@ import { Language as LanguageType } from "../../../types/UserData";
 export default function Language() {
     const [update, setUpdate] = useState(false);
     const [languages, setLanguages] = useState<LanguageType[]>([]);
-    const { user } = useUser();
-    const languageRef = useRef<HTMLInputElement>(null);
-    const proficiencyRef = useRef<HTMLInputElement>(null);
+    const [newLanguage, setNewLanguage] = useState<LanguageType>({ name: "", level: "" });
+    const { user, UpdateLanguages } = useUser();
 
     useEffect(() => {
         const fetchLanguages = async () => {
@@ -18,13 +17,19 @@ export default function Language() {
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
-                setLanguages(userDoc.data().languages || []);
+                const fetchedLanguages = userDoc.data().languages || [];
+                setLanguages(fetchedLanguages);
+                UpdateLanguages(fetchedLanguages); // Only update context after fetching
             }
         };
         fetchLanguages();
-    }, [user]);
+    }, [user, UpdateLanguages]);
 
     const triggerUpdate = () => setUpdate(!update);
+
+    const handleInputChange = (field: keyof LanguageType, value: string) => {
+        setNewLanguage((prev) => ({ ...prev, [field]: value }));
+    };
 
     const handleAddLanguage = async () => {
         if (!user?.uid) {
@@ -32,23 +37,18 @@ export default function Language() {
             return;
         }
         try {
-            const language: LanguageType = {
-                name: languageRef.current?.value || "",
-                level: proficiencyRef.current?.value || "",
-            };
-
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             const existingLanguages = userDoc.exists() ? userDoc.data().languages || [] : [];
 
-            await setDoc(userDocRef, {
-                languages: [...existingLanguages, language]
-            }, { merge: true });
+            const updatedLanguages = [...existingLanguages, newLanguage];
 
-            setLanguages([...existingLanguages, language]);
+            await setDoc(userDocRef, { languages: updatedLanguages }, { merge: true });
+
+            setLanguages(updatedLanguages);
+            UpdateLanguages(updatedLanguages); // Update context with the new languages array
+            setNewLanguage({ name: "", level: "" }); // Clear new language input fields
             triggerUpdate();
-            if (languageRef.current) languageRef.current.value = "";
-            if (proficiencyRef.current) proficiencyRef.current.value = "";
         } catch (error) {
             console.error("Error adding language: ", error);
         }
@@ -80,21 +80,23 @@ export default function Language() {
                         </div>
                     </div>
                     <div className={update ? "block" : "hidden"}>
-                        <form>
+                        <form onSubmit={(e) => { e.preventDefault(); handleAddLanguage(); }}>
                             <div className="flex gap-2 p-1 w-full">
                                 <Input
-                                    ref={languageRef}
                                     label="Language"
                                     labelPlacement="outside"
                                     placeholder="Language"
                                     type="text"
+                                    value={newLanguage.name}
+                                    onChange={(e) => handleInputChange("name", e.target.value)}
                                 />
                                 <Input
-                                    ref={proficiencyRef}
                                     label="Proficiency"
                                     labelPlacement="outside"
                                     placeholder="Proficiency"
                                     type="text"
+                                    value={newLanguage.level}
+                                    onChange={(e) => handleInputChange("level", e.target.value)}
                                 />
                             </div>
                             <div className="flex justify-end items-center">
@@ -107,15 +109,13 @@ export default function Language() {
                 </CardBody>
                 <CardFooter>
                     <div className="flex justify-end items-center">
-                        <Button
-                            onClick={triggerUpdate}
-                            className="mr-2"
-                        >
+                        <Button onClick={triggerUpdate} className="mr-2">
                             {update ? "Done" : "Update"}
                         </Button>
                     </div>
                 </CardFooter>
             </Card>
+            <pre>{JSON.stringify(languages, null, 2)}</pre>
         </div>
     );
 };

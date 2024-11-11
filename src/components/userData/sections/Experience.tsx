@@ -1,6 +1,6 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Input } from "@nextui-org/react";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { db } from "../../../firebase/config";
 import { useUser } from "../../../hooks/useUser";
 import { WorkExperience as ExperienceType } from "../../../types/UserData";
@@ -8,13 +8,15 @@ import { WorkExperience as ExperienceType } from "../../../types/UserData";
 export default function Experience() {
     const [update, setUpdate] = useState(false);
     const [experience, setExperience] = useState<ExperienceType[]>([]);
-    const [responsibilities, setResponsibilities] = useState<string[]>([]);
-    const { user } = useUser();
-    const companyRef = useRef<HTMLInputElement>(null);
-    const positionRef = useRef<HTMLInputElement>(null);
-    const responsibilityRef = useRef<HTMLInputElement>(null);
-    const startDateRef = useRef<HTMLInputElement>(null);
-    const endDateRef = useRef<HTMLInputElement>(null);
+    const [experienceEntry, setExperienceEntry] = useState<ExperienceType>({
+        company: "",
+        position: "",
+        responsibilities: [],
+        startDate: "",
+        endDate: "",
+    });
+    const [responsibilityInput, setResponsibilityInput] = useState("");
+    const { user, UpdateExperience } = useUser();
 
     useEffect(() => {
         const fetchExperience = async () => {
@@ -30,10 +32,17 @@ export default function Experience() {
 
     const triggerUpdate = () => setUpdate(!update);
 
+    const handleInputChange = (field: keyof ExperienceType, value: string) => {
+        setExperienceEntry((prev) => ({ ...prev, [field]: value }));
+    };
+
     const handleAddResponsibility = () => {
-        if (responsibilityRef.current?.value) {
-            setResponsibilities([...responsibilities, responsibilityRef.current.value]);
-            responsibilityRef.current.value = "";
+        if (responsibilityInput) {
+            setExperienceEntry((prev) => ({
+                ...prev,
+                responsibilities: [...prev.responsibilities, responsibilityInput]
+            }));
+            setResponsibilityInput("");
         }
     };
 
@@ -43,29 +52,28 @@ export default function Experience() {
             return;
         }
         try {
-            const newExperience: ExperienceType = {
-                company: companyRef.current?.value || "",
-                position: positionRef.current?.value || "",
-                responsibilities: responsibilities,
-                startDate: startDateRef.current?.value || "",
-                endDate: endDateRef.current?.value || "",
-            };
+            const newExperience: ExperienceType = { ...experienceEntry };
 
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             const existingExperience = userDoc.exists() ? userDoc.data().experience || [] : [];
 
+            const updatedExperience = [...existingExperience, newExperience];
+
             await setDoc(userDocRef, {
-                experience: [...existingExperience, newExperience]
+                experience: updatedExperience
             }, { merge: true });
 
-            setExperience([...existingExperience, newExperience]);
-            setResponsibilities([]);
+            setExperience(updatedExperience);
+            setExperienceEntry({
+                company: "",
+                position: "",
+                responsibilities: [],
+                startDate: "",
+                endDate: "",
+            });
+            UpdateExperience(updatedExperience);
             triggerUpdate();
-            if (companyRef.current) companyRef.current.value = "";
-            if (positionRef.current) positionRef.current.value = "";
-            if (startDateRef.current) startDateRef.current.value = "";
-            if (endDateRef.current) endDateRef.current.value = "";
         } catch (error) {
             console.error("Error adding experience: ", error);
         }
@@ -119,30 +127,33 @@ export default function Experience() {
                         </div>
                     </div>
                     <div className={update ? "block" : "hidden"}>
-                        <form>
+                        <form onSubmit={(e) => { e.preventDefault(); handleAddExperience(); }}>
                             <div className="flex gap-2 p-1 w-full">
                                 <Input
-                                    ref={companyRef}
                                     label="Company"
                                     labelPlacement="outside"
                                     placeholder="Company"
                                     type="text"
+                                    value={experienceEntry.company}
+                                    onChange={(e) => handleInputChange('company', e.target.value)}
                                 />
                                 <Input
-                                    ref={positionRef}
                                     label="Position"
                                     labelPlacement="outside"
                                     placeholder="Position"
                                     type="text"
+                                    value={experienceEntry.position}
+                                    onChange={(e) => handleInputChange('position', e.target.value)}
                                 />
                             </div>
                             <div className="flex flex-col gap-2 p-1 w-full">
                                 <Input
-                                    ref={responsibilityRef}
                                     label="Responsibilities"
                                     labelPlacement="outside"
                                     placeholder="Responsibility"
                                     type="text"
+                                    value={responsibilityInput}
+                                    onChange={(e) => setResponsibilityInput(e.target.value)}
                                 />
                                 <div className="flex justify-start items-center">
                                     <Button onClick={handleAddResponsibility}>
@@ -150,25 +161,27 @@ export default function Experience() {
                                     </Button>
                                 </div>
                                 <ul className="text-sm">
-                                    {responsibilities.map((resp, index) => (
+                                    {experienceEntry.responsibilities.map((resp, index) => (
                                         <li key={index}>{resp}</li>
                                     ))}
                                 </ul>
                             </div>
                             <div className="flex gap-2 p-1 w-full">
                                 <Input
-                                    ref={startDateRef}
                                     label="Start Date"
                                     labelPlacement="outside"
                                     placeholder="Start Date"
                                     type="date"
+                                    value={experienceEntry.startDate}
+                                    onChange={(e) => handleInputChange('startDate', e.target.value)}
                                 />
                                 <Input
-                                    ref={endDateRef}
                                     label="End Date"
                                     labelPlacement="outside"
                                     placeholder="End Date"
                                     type="date"
+                                    value={experienceEntry.endDate}
+                                    onChange={(e) => handleInputChange('endDate', e.target.value)}
                                 />
                             </div>
                             <div className="flex justify-end items-center">
@@ -180,13 +193,12 @@ export default function Experience() {
                     </div>
                 </CardBody>
                 <CardFooter>
-                    <Button
-                        onClick={triggerUpdate}
-                    >
+                    <Button onClick={triggerUpdate}>
                         {update ? "Done" : "Update"}
                     </Button>
                 </CardFooter>
             </Card>
+            <pre>{JSON.stringify(user?.experience, null, 2)}</pre>
         </div>
     );
 };

@@ -5,6 +5,7 @@ interface ContactInfo {
     linkedIn?: string;
     github?: string;
     website?: string;
+    image?: string;
 }
 
 interface Education {
@@ -28,6 +29,7 @@ interface Project {
     description: string;
     technologies: string[];
     link?: string;
+    image?: string;
 }
 
 interface Certification {

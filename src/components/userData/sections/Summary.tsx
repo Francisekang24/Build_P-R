@@ -7,7 +7,7 @@ import { useUser } from "../../../hooks/useUser";
 export default function Summary() {
     const [update, setUpdate] = useState(false);
     const [summary, setSummary] = useState("");
-    const { user } = useUser();
+    const { user, UpdateSummary } = useUser();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
@@ -23,6 +23,7 @@ export default function Summary() {
     }, [user]);
 
     const triggerUpdate = () => setUpdate(!update);
+    UpdateSummary(summary);
 
     const handleAddSummary = async () => {
         if (!user?.uid) {
@@ -88,6 +89,9 @@ export default function Summary() {
                     </Button>
                 </CardFooter>
             </Card>
+            <pre className="w-40">
+                {JSON.stringify(summary, null, 2)}
+            </pre>
         </div>
     );
 };

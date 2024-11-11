@@ -1,69 +1,77 @@
 import { useState } from "react";
-import { X } from "lucide-react";
-import { Accordion, AccordionItem, Button, cn, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Switch } from "@nextui-org/react";
+import { X, User } from "lucide-react";
+import { Accordion, AccordionItem, Button, cn, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, image, Switch, Tooltip } from "@nextui-org/react";
 import Navbar01 from "../data/templates/portfolios/components/navbars/Navbar_0001";
-import IntroductionPanel from "../data/templates/portfolios/components/Panel";
+import { useUser } from "../hooks/useUser";
+
+
 
 interface panelItem {
     title: string;
     id: number;
-    content: JSX.Element | string;
+    content: JSX.Element[] | string[];
 }
+
 
 const panelItemsS: panelItem[] = [
     {
         title: "Home/Introduction",
         id: 1,
-        content:  <IntroductionPanel />
+        content: [
+                    <div className="flex gap-1 p-1">
+                        <h1></h1>
+                    </div>, 
+                    <div>Introduction option 2.</div>, 
+                    <div>Introduction option 3.</div>, 
+                    <div>Introduction option 4.</div>
+                ],
     },
     {
         title: "About Me",
         id: 2,
-        content: <div>A more detailed biography, covering your background, expertise, interests, and unique qualities. This section may include personal values, career goals, and a bit about your personality.</div>
+        content: [<div>About option 1</div>, <div>About option 2</div>]
     },
     {
         title: "Portfolio/Projects",
         id: 3,
-        content: <div>The core of the portfolio, showcasing your work through projects or case studies. Each project should include descriptions, technologies used, roles, responsibilities, and outcomes. Visuals like screenshots or videos add to the appeal.</div>
+        content: [<div>Portfolio option 1</div>, <div>Portfolio option 2</div>]
     },
     {
         title: "Resume/CV",
         id: 4,
-        content: <div>A section for career highlights, usually listing education, work experience, skills, certifications, and other credentials. Some include a downloadable PDF of the resume.</div>
+        content: [<div>Resume option 1</div>, <div>Resume option 2</div>]
     },
     {
         title: "Skills",
         id: 5,
-        content: <div>A dedicated space to list technical and soft skills. You might categorize them by expertise level, field, or proficiency.</div>
+        content: [<div>Skills option 1</div>, <div>Skills option 2</div>]
     },
     {
         title: "Blog/Articles",
         id: 6,
-        content: <div>If you write about your field, share knowledge, or reflect on projects, this is a good place to link to articles or blog posts.</div>
+        content: [<div>Blog option 1</div>, <div>Blog option 2</div>]
     },
     {
         title: "Testimonials/Recommendations",
         id: 7,
-        content: <div>Quotes from colleagues, clients, or mentors that add credibility and illustrate your impact.</div>
+        content: [<div>Testimonials option 1</div>, <div>Testimonials option 2</div>]
     },
     {
         title: "Contact",
         id: 8,
-        content: <div>A form or contact information to make it easy for visitors to get in touch. This might include social media links, email, or a contact form.</div>
+        content: [<div>Contact option 1</div>, <div>Contact option 2</div>]
     },
     {
         title: "Social Links/Media",
         id: 9,
-        content: <div>A section for icons linking to your social profiles, especially if they’re relevant to your field (LinkedIn, GitHub, Twitter, etc.).</div>
+        content: [<div>Social Links option 1</div>, <div>Social Links option 2</div>]
     }
-]
+];
 
 export default function Editor() {
 
-    const [bg_color, setbg_Color] = useState('#fff000');
+    const [bg_color, setbg_Color] = useState('#878282');
     const [bg_image, setbg_Image] = useState('');
-
-
 
     interface ColorChangeEvent extends React.ChangeEvent<HTMLInputElement> { }
 
@@ -78,26 +86,35 @@ export default function Editor() {
     }
 
     const [panelItems, setPanelItems] = useState<panelItem[]>([]);
+    const [selectedContentOptions, setSelectedContentOptions] = useState<{ [key: number]: number }>({});
 
     const addPanelItem = (item: panelItem) => {
         setPanelItems([...panelItems, item]);
+        setSelectedContentOptions({ ...selectedContentOptions, [item.id]: 0 });
     };
 
     const removePanelItem = (id: number) => {
         setPanelItems(panelItems.filter((item) => item.id !== id));
+        const newSelectedContentOptions = { ...selectedContentOptions };
+        delete newSelectedContentOptions[id];
+        setSelectedContentOptions(newSelectedContentOptions);
     }
 
     const [navbarItems, setNavbarItems] = useState<0 | 1 | 2>(0);
 
-    const handleNavbarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setNavbarItems(e.target.value as any);
+    const isItemAdded = (id: number) => {
+        return panelItems.some(item => item.id === id);
+    }
+
+    const handleContentOptionChange = (panelId: number, optionIndex: number) => {
+        setSelectedContentOptions({ ...selectedContentOptions, [panelId]: optionIndex });
     }
 
     return (
         <div className="flex h-screen">
             <div className="flex flex-col w-3/12 p-2">
                 Panel
-                <div className="border rounded-md h-full w-full bg-gray-300">
+                <div className="border rounded-md h-full w-full bg-gray-300 overflow-y-auto">
                     <div className="flex flex-col space-y-2 p-2">
                         <h2 className="text-lg font-bold">Background</h2>
                         <div className="flex place-items-center items-center">
@@ -205,7 +222,28 @@ export default function Editor() {
                                         content: cn('text-sm')
                                     }}
                                 >
-                                    {item.content}
+                                    <div className="flex gap-2 flex-wrap">
+                                        {item.content.map((content, index) => (
+                                            <Switch
+                                                key={index}
+                                                isSelected={selectedContentOptions[item.id] === index}
+                                                onChange={() => handleContentOptionChange(item.id, index)}
+                                                classNames={{
+                                                    base: cn(
+                                                        "inline-flex flex-row-reverse w-full max-w-md bg-content1 hover:bg-content2 items-center",
+                                                        "justify-between cursor-pointer rounded-lg gap-2 p-4 border-2 border-transparent",
+                                                        "data-[selected=true]:border-primary",
+                                                    ),
+                                                    wrapper: "hidden",
+                                                    thumb: cn("hidden"),
+                                                }}
+                                            >
+                                                <div className="flex flex-col gap-1">
+                                                    <p className="text-medium">Option {index + 1}</p>
+                                                </div>
+                                            </Switch>
+                                        ))}
+                                    </div>
                                     <Button
                                         color="danger"
                                         onClick={() => removePanelItem(item.id)}
@@ -225,8 +263,14 @@ export default function Editor() {
                             </DropdownTrigger>
                             <DropdownMenu aria-label="Static Actions">
                                 {panelItemsS.map((item) => (
-                                    <DropdownItem key={item.id} onClick={() => addPanelItem(item)}>
-                                        {item.title}
+                                    <DropdownItem 
+                                        key={item.id} 
+                                        onClick={() => !isItemAdded(item.id) && addPanelItem(item)}
+                                        isDisabled={isItemAdded(item.id)}
+                                    >
+                                        <Tooltip content={isItemAdded(item.id) ? "Already added" : ""}>
+                                            {item.title}
+                                        </Tooltip>
                                     </DropdownItem>
                                 ))}
                             </DropdownMenu>
@@ -263,6 +307,12 @@ export default function Editor() {
                             />
                         </div>
                     )}
+                    {/* Panel Items */}
+                    {panelItems.map((item) => (
+                        <div key={item.id}>
+                            {item.content[selectedContentOptions[item.id]]}
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

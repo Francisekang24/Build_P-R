@@ -1,6 +1,6 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Input } from "@nextui-org/react";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { db } from "../../../firebase/config";
 import { useUser } from "../../../hooks/useUser";
 import { Certification } from "../../../types/UserData";
@@ -8,10 +8,8 @@ import { Certification } from "../../../types/UserData";
 export default function Certificate() {
     const [update, setUpdate] = useState(false);
     const [certificates, setCertificates] = useState<Certification[]>([]);
-    const { user } = useUser();
-    const nameRef = useRef<HTMLInputElement>(null);
-    const organizationRef = useRef<HTMLInputElement>(null);
-    const dateRef = useRef<HTMLInputElement>(null);
+    const [newCertificate, setNewCertificate] = useState<Certification>({ name: "", organization: "", date: "" });
+    const { user, UpdateCertifications } = useUser();
 
     useEffect(() => {
         const fetchCertificates = async () => {
@@ -19,13 +17,19 @@ export default function Certificate() {
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
-                setCertificates(userDoc.data().certificates || []);
+                const fetchedCertificates = userDoc.data().certificates || [];
+                setCertificates(fetchedCertificates);
+                UpdateCertifications(fetchedCertificates); // Only update context after fetching
             }
         };
         fetchCertificates();
-    }, [user]);
+    }, [user, UpdateCertifications]);
 
     const triggerUpdate = () => setUpdate(!update);
+
+    const handleInputChange = (field: keyof Certification, value: string) => {
+        setNewCertificate((prev) => ({ ...prev, [field]: value }));
+    };
 
     const handleAddCertificate = async () => {
         if (!user?.uid) {
@@ -33,25 +37,18 @@ export default function Certificate() {
             return;
         }
         try {
-            const certificate: Certification = {
-                name: nameRef.current?.value || "",
-                organization: organizationRef.current?.value || "",
-                date: dateRef.current?.value || "",
-            };
-
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             const existingCertificates = userDoc.exists() ? userDoc.data().certificates || [] : [];
 
-            await setDoc(userDocRef, {
-                certificates: [...existingCertificates, certificate]
-            }, { merge: true });
+            const updatedCertificates = [...existingCertificates, newCertificate];
 
-            setCertificates([...existingCertificates, certificate]);
+            await setDoc(userDocRef, { certificates: updatedCertificates }, { merge: true });
+
+            setCertificates(updatedCertificates);
+            UpdateCertifications(updatedCertificates); // Update context with the new certifications array
+            setNewCertificate({ name: "", organization: "", date: "" }); // Clear new certificate input fields
             triggerUpdate();
-            if (nameRef.current) nameRef.current.value = "";
-            if (organizationRef.current) organizationRef.current.value = "";
-            if (dateRef.current) dateRef.current.value = "";
         } catch (error) {
             console.error("Error adding certificate: ", error);
         }
@@ -87,30 +84,33 @@ export default function Certificate() {
                         </div>
                     </div>
                     <div className={update ? "block" : "hidden"}>
-                        <form>
+                        <form onSubmit={(e) => { e.preventDefault(); handleAddCertificate(); }}>
                             <div className="flex gap-2 p-1 w-full">
                                 <Input
-                                    ref={nameRef}
                                     label="Certificate"
                                     labelPlacement="outside"
                                     placeholder="Certificate"
                                     type="text"
+                                    value={newCertificate.name}
+                                    onChange={(e) => handleInputChange("name", e.target.value)}
                                 />
                                 <Input
-                                    ref={organizationRef}
                                     label="Institution"
                                     labelPlacement="outside"
                                     placeholder="Institution"
                                     type="text"
+                                    value={newCertificate.organization}
+                                    onChange={(e) => handleInputChange("organization", e.target.value)}
                                 />
                             </div>
                             <div className="flex gap-2 p-1 w-full">
                                 <Input
-                                    ref={dateRef}
                                     label="Date"
                                     labelPlacement="outside"
                                     placeholder="Date"
                                     type="date"
+                                    value={newCertificate.date}
+                                    onChange={(e) => handleInputChange("date", e.target.value)}
                                 />
                             </div>
                             <div className="flex justify-end items-center">
@@ -123,15 +123,13 @@ export default function Certificate() {
                 </CardBody>
                 <CardFooter>
                     <div className="flex justify-end items-center">
-                        <Button
-                            onClick={triggerUpdate}
-                            className="mr-2"
-                        >
+                        <Button onClick={triggerUpdate} className="mr-2">
                             {update ? "Done" : "Update"}
                         </Button>
                     </div>
                 </CardFooter>
             </Card>
+            <pre>{JSON.stringify(certificates, null, 2)}</pre>
         </div>
     );
 };

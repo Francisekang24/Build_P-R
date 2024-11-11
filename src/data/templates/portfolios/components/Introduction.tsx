@@ -23,15 +23,3 @@ export function Introduction_02({ title, subtitle, description }: IntroductionPr
     </section>
   );
 }
-
-interface IntroductionExportProps extends IntroductionProps {
-  variant: 'Introduction_01' | 'Introduction_02';
-}
-
-export function Introduction({ variant, ...props }: IntroductionExportProps) {
-  if (variant === 'Introduction_01') {
-    return <Introduction_01 {...props} />;
-  } else {
-    return <Introduction_02 {...props} />;
-  }
-}

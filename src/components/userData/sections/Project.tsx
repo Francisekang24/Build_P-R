@@ -1,5 +1,5 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Input, Textarea } from "@nextui-org/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../firebase/config";
 import { useUser } from "../../../hooks/useUser";
@@ -8,12 +8,9 @@ import { Project as ProjectType } from "../../../types/UserData";
 export default function Project() {
     const [update, setUpdate] = useState(false);
     const [projects, setProjects] = useState<ProjectType[]>([]);
+    const [newProject, setNewProject] = useState<ProjectType>({ name: "", link: "", description: "", technologies: [] });
     const [technologies, setTechnologies] = useState<string[]>([]);
-    const { user } = useUser();
-    const projectNameRef = useRef<HTMLInputElement>(null);
-    const linkRef = useRef<HTMLInputElement>(null);
-    const descriptionRef = useRef<HTMLTextAreaElement>(null);
-    const technologyRef = useRef<HTMLInputElement>(null);
+    const { user, UpdateProjects } = useUser();
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -21,18 +18,24 @@ export default function Project() {
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
-                setProjects(userDoc.data().projects || []);
+                const fetchedProjects = userDoc.data().projects || [];
+                setProjects(fetchedProjects);
+                UpdateProjects(fetchedProjects); // Only update context after fetching
             }
         };
         fetchProjects();
-    }, [user]);
+    }, [user, UpdateProjects]);
 
     const triggerUpdate = () => setUpdate(!update);
 
+    const handleInputChange = (field: keyof ProjectType, value: string) => {
+        setNewProject((prev) => ({ ...prev, [field]: value }));
+    };
+
     const handleAddTechnology = () => {
-        if (technologyRef.current?.value) {
-            setTechnologies([...technologies, technologyRef.current.value]);
-            technologyRef.current.value = "";
+        if (newProject.technologies) {
+            setNewProject((prev) => ({ ...prev, technologies: [...prev.technologies, ...technologies] }));
+            setTechnologies([]); // Clear the technologies input after adding
         }
     };
 
@@ -42,27 +45,18 @@ export default function Project() {
             return;
         }
         try {
-            const newProject: ProjectType = {
-                name: projectNameRef.current?.value || "",
-                link: linkRef.current?.value || "",
-                description: descriptionRef.current?.value || "",
-                technologies: technologies,
-            };
-
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
             const existingProjects = userDoc.exists() ? userDoc.data().projects || [] : [];
 
-            await setDoc(userDocRef, {
-                projects: [...existingProjects, newProject]
-            }, { merge: true });
+            const updatedProjects = [...existingProjects, newProject];
 
-            setProjects([...existingProjects, newProject]);
-            setTechnologies([]);
+            await setDoc(userDocRef, { projects: updatedProjects }, { merge: true });
+
+            setProjects(updatedProjects);
+            UpdateProjects(updatedProjects); // Update context with the new projects array
+            setNewProject({ name: "", link: "", description: "", technologies: [] }); // Clear new project fields
             triggerUpdate();
-            if (projectNameRef.current) projectNameRef.current.value = "";
-            if (linkRef.current) linkRef.current.value = "";
-            if (descriptionRef.current) descriptionRef.current.value = "";
         } catch (error) {
             console.error("Error adding project: ", error);
         }
@@ -110,39 +104,43 @@ export default function Project() {
                         </div>
                     </div>
                     <div className={update ? "block" : "hidden"}>
-                        <form>
+                        <form onSubmit={(e) => { e.preventDefault(); handleAddProject(); }}>
                             <div className="flex gap-2 p-1 w-full">
                                 <Input
-                                    ref={projectNameRef}
                                     label="Project Name"
                                     labelPlacement="outside"
                                     placeholder="Project Name"
                                     type="text"
+                                    value={newProject.name}
+                                    onChange={(e) => handleInputChange("name", e.target.value)}
                                 />
                                 <Input
-                                    ref={linkRef}
                                     label="Link"
                                     labelPlacement="outside"
                                     placeholder="Link"
                                     type="text"
+                                    value={newProject.link}
+                                    onChange={(e) => handleInputChange("link", e.target.value)}
                                 />
                             </div>
                             <div className="flex gap-2 p-1 w-full">
                                 <Textarea
-                                    ref={descriptionRef}
                                     label="Description"
                                     labelPlacement="outside"
                                     placeholder="Description"
                                     type="text"
+                                    value={newProject.description}
+                                    onChange={(e) => handleInputChange("description", e.target.value)}
                                 />
                             </div>
                             <div className="flex flex-col p-1 w-full">
                                 <Input
-                                    ref={technologyRef}
                                     label="Technologies"
                                     labelPlacement="outside"
                                     placeholder="Technology"
                                     type="text"
+                                    value={technologies.join(", ")}
+                                    onChange={(e) => setTechnologies([e.target.value])} // Allow the user to add multiple technologies
                                 />
                                 <div className="flex justify-start items-center">
                                     <Button onClick={handleAddTechnology}>
@@ -150,7 +148,7 @@ export default function Project() {
                                     </Button>
                                 </div>
                                 <ul className="text-sm">
-                                    {technologies.map((tech, index) => (
+                                    {newProject.technologies.map((tech, index) => (
                                         <li key={index}>{tech}</li>
                                     ))}
                                 </ul>
@@ -164,13 +162,12 @@ export default function Project() {
                     </div>
                 </CardBody>
                 <CardFooter>
-                    <Button
-                        onClick={triggerUpdate}
-                    >
+                    <Button onClick={triggerUpdate}>
                         {update ? "Done" : "Update"}
                     </Button>
                 </CardFooter>
             </Card>
+            <pre>{JSON.stringify(projects, null, 2)}</pre>
         </div>
     );
 };

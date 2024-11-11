@@ -1,5 +1,5 @@
 import { Button, Card, CardBody, CardFooter, CardHeader, Input, Select, SelectItem } from "@nextui-org/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../firebase/config";
 import { useUser } from "../../../hooks/useUser";
@@ -18,17 +18,7 @@ export default function Contact() {
         github: "",
         website: ""
     });
-    const { user } = useUser();
-    const firstNameRef = useRef<HTMLInputElement>(null);
-    const lastNameRef = useRef<HTMLInputElement>(null);
-    const titleRef = useRef<HTMLSelectElement>(null);
-    const positionRef = useRef<HTMLInputElement>(null);
-    const emailRef = useRef<HTMLInputElement>(null);
-    const phoneRef = useRef<HTMLInputElement>(null);
-    const addressRef = useRef<HTMLInputElement>(null);
-    const linkedInRef = useRef<HTMLInputElement>(null);
-    const githubRef = useRef<HTMLInputElement>(null);
-    const websiteRef = useRef<HTMLInputElement>(null);
+    const { user, UpdateContactInfo } = useUser();
 
     useEffect(() => {
         const fetchContactInfo = async () => {
@@ -44,32 +34,34 @@ export default function Contact() {
 
     const triggerUpdate = () => setUpdate(!update);
 
+    interface ContactInfo {
+        firstName: string;
+        lastName: string;
+        title: string;
+        position: string;
+        email: string;
+        phone: string;
+        address: string;
+        linkedIn: string;
+        github: string;
+        website: string;
+    }
+
+    const handleInputChange = (field: keyof ContactInfo, value: string): void => {
+        setContactInfo((prev) => ({ ...prev, [field]: value }));
+    };
+
     const handleSaveContactInfo = async () => {
         if (!user?.uid) {
             console.error("User ID is undefined");
             return;
         }
         try {
-            const updatedContactInfo = {
-                firstName: firstNameRef.current?.value || "",
-                lastName: lastNameRef.current?.value || "",
-                title: titleRef.current?.value || "",
-                position: positionRef.current?.value || "",
-                email: emailRef.current?.value || "",
-                phone: phoneRef.current?.value || "",
-                address: addressRef.current?.value || "",
-                linkedIn: linkedInRef.current?.value || "",
-                github: githubRef.current?.value || "",
-                website: websiteRef.current?.value || ""
-            };
-
             const userDocRef = doc(db, 'users', user.uid);
-            await setDoc(userDocRef, {
-                contactInfo: updatedContactInfo
-            }, { merge: true });
+            await setDoc(userDocRef, { contactInfo }, { merge: true });
 
-            setContactInfo(updatedContactInfo);
             triggerUpdate();
+            UpdateContactInfo(contactInfo); // Update contact info in user context
         } catch (error) {
             console.error("Error saving contact info: ", error);
         }
@@ -121,28 +113,27 @@ export default function Contact() {
                     <div className={update ? "block" : "hidden"}>
                         <div className="flex gap-2 p-1 w-full">
                             <Input
-                                ref={firstNameRef}
                                 label="First Name"
                                 labelPlacement="outside"
                                 placeholder="First Name"
                                 type="text"
-                                defaultValue={contactInfo.firstName}
+                                value={contactInfo.firstName}
+                                onChange={(e) => handleInputChange('firstName', e.target.value)}
                             />
                             <Input
-                                ref={lastNameRef}
                                 label="Last Name"
                                 labelPlacement="outside"
                                 placeholder="Last Name"
                                 type="text"
-                                defaultValue={contactInfo.lastName}
+                                value={contactInfo.lastName}
+                                onChange={(e) => handleInputChange('lastName', e.target.value)}
                             />
                             <Select
-                                ref={titleRef}
                                 label="Title"
                                 labelPlacement="outside"
-                                placeholder=""
+                                placeholder="Title"
                                 value={contactInfo.title}
-                                onChange={(e) => setContactInfo({ ...contactInfo, title: e.target.value })}
+                                onChange={(e) => handleInputChange('title', e.target.value)}
                             >
                                 <SelectItem key='Dr'>Dr</SelectItem>
                                 <SelectItem key='Mr'>Mr</SelectItem>
@@ -152,64 +143,64 @@ export default function Contact() {
                                 <SelectItem key='Prof'>Prof</SelectItem>
                             </Select>
                             <Input
-                                ref={positionRef}
                                 label="Position"
                                 labelPlacement="outside"
                                 placeholder="Position"
                                 type="text"
-                                defaultValue={contactInfo.position}
+                                value={contactInfo.position}
+                                onChange={(e) => handleInputChange('position', e.target.value)}
                             />
                         </div>
                         <div className="flex gap-2 p-1 w-full">
                             <Input
-                                ref={emailRef}
                                 label="Email"
                                 labelPlacement="outside"
                                 placeholder="Email"
                                 type="email"
-                                defaultValue={contactInfo.email}
+                                value={contactInfo.email}
+                                onChange={(e) => handleInputChange('email', e.target.value)}
                             />
                             <Input
-                                ref={phoneRef}
                                 label="Phone"
                                 labelPlacement="outside"
                                 placeholder="Phone"
                                 type="tel"
-                                defaultValue={contactInfo.phone}
+                                value={contactInfo.phone}
+                                onChange={(e) => handleInputChange('phone', e.target.value)}
                             />
                             <Input
-                                ref={addressRef}
                                 label="Address"
                                 labelPlacement="outside"
                                 placeholder="Address"
                                 type="text"
-                                defaultValue={contactInfo.address}
+                                value={contactInfo.address}
+                                onChange={(e) => handleInputChange('address', e.target.value)}
                             />
                         </div>
                         <div className="flex gap-2 p-1 w-full">
                             <Input
-                                ref={linkedInRef}
                                 label="LinkedIn"
                                 labelPlacement="outside"
                                 placeholder="LinkedIn"
                                 type="text"
-                                defaultValue={contactInfo.linkedIn}
+                                value={contactInfo.linkedIn}
+                                onChange={(e) => handleInputChange('linkedIn', e.target.value)}
                             />
                             <Input
-                                ref={githubRef}
                                 label="Github"
                                 labelPlacement="outside"
                                 placeholder="Github"
                                 type="text"
-                                defaultValue={contactInfo.github}
+                                value={contactInfo.github}
+                                onChange={(e) => handleInputChange('github', e.target.value)}
                             />
                             <Input
-                                ref={websiteRef}
                                 label="Website"
                                 labelPlacement="outside"
                                 placeholder="Website"
                                 type="text"
-                                defaultValue={contactInfo.website}
+                                value={contactInfo.website}
+                                onChange={(e) => handleInputChange('website', e.target.value)}
                             />
                         </div>
                         <div className="flex justify-end items-center">
@@ -220,13 +211,14 @@ export default function Contact() {
                     </div>
                 </CardBody>
                 <CardFooter>
-                    <Button
-                        onClick={triggerUpdate}
-                    >
+                    <Button onClick={triggerUpdate}>
                         {update ? "Done" : "Update"}
                     </Button>
                 </CardFooter>
             </Card>
+            <div>
+                <pre>{JSON.stringify(user?.contactInfo, null, 2)}</pre>
+            </div>
         </div>
     );
 };
