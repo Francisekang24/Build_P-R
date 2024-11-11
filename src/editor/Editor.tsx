@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { X, User } from "lucide-react";
+import { X } from "lucide-react";
 import { Accordion, AccordionItem, Button, cn, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, image, Switch, Tooltip } from "@nextui-org/react";
 import Navbar01 from "../data/templates/portfolios/components/navbars/Navbar_0001";
-import { useUser } from "../hooks/useUser";
+import { Introduction_01, Introduction_02 } from "../data/templates/portfolios/components/Introduction";
+import { Aboutme_01, Aboutme_02 } from "../data/templates/portfolios/components/Aboutme";
+import { Projects_01, Projects_02 } from "../data/templates/portfolios/components/Projects";
 
 
 
@@ -18,23 +20,25 @@ const panelItemsS: panelItem[] = [
         title: "Home/Introduction",
         id: 1,
         content: [
-                    <div className="flex gap-1 p-1">
-                        <h1></h1>
-                    </div>, 
-                    <div>Introduction option 2.</div>, 
-                    <div>Introduction option 3.</div>, 
-                    <div>Introduction option 4.</div>
-                ],
+            <Introduction_01 />,
+            <Introduction_02 />
+        ],
     },
     {
         title: "About Me",
         id: 2,
-        content: [<div>About option 1</div>, <div>About option 2</div>]
+        content: [
+            <Aboutme_01 />,
+            <Aboutme_02 />
+        ]
     },
     {
         title: "Portfolio/Projects",
         id: 3,
-        content: [<div>Portfolio option 1</div>, <div>Portfolio option 2</div>]
+        content: [
+            <Projects_01 />,
+            <Projects_02 />
+        ]
     },
     {
         title: "Resume/CV",
@@ -263,8 +267,8 @@ export default function Editor() {
                             </DropdownTrigger>
                             <DropdownMenu aria-label="Static Actions">
                                 {panelItemsS.map((item) => (
-                                    <DropdownItem 
-                                        key={item.id} 
+                                    <DropdownItem
+                                        key={item.id}
                                         onClick={() => !isItemAdded(item.id) && addPanelItem(item)}
                                         isDisabled={isItemAdded(item.id)}
                                     >

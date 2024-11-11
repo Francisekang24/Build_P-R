@@ -1,4 +1,8 @@
 interface ContactInfo {
+    firstName: string;
+    lastName: string;
+    title: string;
+    position: string;
     email: string;
     phone: string;
     address: string;
@@ -49,10 +53,6 @@ interface Language {
 }
 
 interface UserData {
-    firstName: string;
-    lastName: string;
-    title: string;
-    position: string;
     contactInfo: ContactInfo;
     education: Education[];
     workExperience: WorkExperience[];
