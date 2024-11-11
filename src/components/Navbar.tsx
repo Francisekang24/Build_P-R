@@ -63,6 +63,11 @@ export default function Navbar() {
                             Portfolios
                         </NavLink>
                     </NavbarItem>
+                    <NavbarItem>
+                        <NavLink to="/editor" className={({ isActive }) => isActive ? "text-primary" : "text-inherit"}>
+                            Editor
+                        </NavLink>
+                    </NavbarItem>
                 </NavbarContent>
             </NavbarContent>
             <NavbarContent as="div" className="items-center" justify="end">

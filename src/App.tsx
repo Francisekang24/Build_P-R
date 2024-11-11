@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Resume from './pages/Resume';
 import Portfolio from './pages/Porfolio';
 import UserdatatForm from './components/userData/UserdataForm';
+import Editor from './editor/Editor';
 
 
 export default function App() {
@@ -47,6 +48,15 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path='/editor'
+          element={
+            <ProtectedRoute>
+              <Editor />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<h1>Not Found</h1>} />
       </Routes>
     </Router>
   );
